@@ -1,0 +1,57 @@
+plugins {
+    id 'org.springframework.boot' version '2.5.2'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+}
+
+group = 'com.greenfox'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+//wsdl config
+configurations {
+    jaxws
+}
+
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    //wsdl dependency
+    jaxws 'com.sun.xml.ws:jaxws-tools:2.1.4'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+//this task can generate java classes from wsdl url to soap folder
+task wsimport {
+    ext.destDir = file("${projectDir}/src/main/generated")
+    doLast {
+        ant {
+            sourceSets.main.output.classesDirs.inits()
+            destDir.mkdirs()
+            taskdef(name: 'wsimport',
+                    classname: 'com.sun.tools.ws.ant.WsImport',
+                    classpath: configurations.jaxws.asPath
+            )
+            wsimport(keep: true,
+                    sourcedestdir: 'src/main/java',
+                    package: "com.greenfox.arfolyam.soap",
+                    wsdl: 'http://www.mnb.hu/arfolyamok.asmx?WSDL') {
+                xjcarg(value: "-XautoNameResolution")
+            }
+        }
+    }
+}
+compileJava {
+    dependsOn wsimport
+    source wsimport.destDir
+}
+
